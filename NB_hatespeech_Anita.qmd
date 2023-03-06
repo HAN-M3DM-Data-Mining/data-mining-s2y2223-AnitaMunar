@@ -1,0 +1,181 @@
+---
+title: "NB_hatespeech_Anita"
+format: html
+editor: visual
+---
+
+## Naive Bayes for hate speech detection
+
+by Anita Munar
+
+Below are the CRISP analysis and Naive Bayes model, prepared for the dataset regarding an online hate speech study from 2019. Researchers Jing Qian, Anna Bethke, Yinyin Liu, Elizabeth Belding and William Yang Wang investigated how to counter online hate speech with Natural Language Processing (NLP). The goal of this research was to provide generative hate speech intervention, with automatically generate responses to intervene in online situations where needed, preventing the online environment from becoming hostile. Their study introduced conversational context, compared to earlier NLPs that treated each post as an isolated case (Qian, Bethke, Liu, Belding & Wang, 2019).
+
+The second dataset from Gab has a similar approach. These two datasets retain their conversational context and introduce human-written intervention responses. The social media posts in our datasets are manually labeled as hate or non-hate speech, and further evaluated on the type of hate speech,whether it is racial, gender based or sexual in nature.
+
+```{r}
+library(class)
+library(ggplot2)
+library(caret)
+library(lattice)
+library(tidyverse)
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
+library(tm)
+library(slam)
+library(e1071)
+library(ISLR)
+library(magrittr)
+library(naivebayes)
+library(wordcloud)
+```
+
+These are the libraries I loaded in, based on the Naive Bayes assignment from class, plus the ISLR and magrittr as additional packages.
+
+## 
+
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-reddit-hate-speech.csv"
+rawDF <- read_csv(url)
+```
+
+I start importing the dataset, for which I used the raw version of the csv file from the github environment. Sadly, I do not yet know how to connect my repository to R, so I am using the url itself.
+
+```{r}
+head(rawDF)
+str(rawDF)
+```
+
+After checking the data, I see that the first column (id) is not useful for my analysis.
+
+```{r}
+cleanDF <- rawDF[-1]
+head(cleanDF)
+```
+
+Then, I will relevel the hate_speech_idx column as factor from character.
+
+```{r}
+cleanDF$hate_speech_idx <- cleanDF$hate_speech_idx %>% factor 
+```
+
+We assign a corpus named rawCorpus variable, using the cleanDF data:
+
+```{r}
+rawCorpus <- Corpus(VectorSource(cleanDF$text))
+inspect(rawCorpus[1:3])
+```
+
+After inspection, we see that the data must be cleaned. I will use the cleaning commands as seen in class:
+
+```{r}
+cleanCorpus <- rawCorpus %>% tm_map(tolower) %>% tm_map(removeNumbers)
+cleanCorpus <- cleanCorpus %>% tm_map(tolower) %>% tm_map(removeWords, stopwords()) %>% tm_map(removePunctuation)
+cleanCorpus <- cleanCorpus %>% tm_map(stripWhitespace)
+```
+
+The error is as seen in class, but we proceed further.
+
+    transformation drops documents
+
+```{r}
+tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])
+```
+
+    A tibble: 3 × 2
+      Raw                                                                            Clean
+      <chr>                                                                          <chr>
+    1 "1. A subsection of retarded Hungarians? Ohh boy. brace for a livid Bulbasaur… " su…
+    2 "1. > \"y'all hear sumn?\"  by all means I live in a small town rn (for work)… " y …
+    3 "1. wouldn't the defenders or whatever they are as a group be the most divers… " de…
+
+With the help of the tibble, we can compare the raw corpus to the cleaned version.
+
+Further on, I assign each word to its own column with the help of DTM:
+
+```{r}
+cleanDTM <- cleanCorpus %>% DocumentTermMatrix
+inspect(cleanDTM)
+```
+
+Now, the dataset must be split into train and test sets. This is where the createDataPartition() function from the caret package comes into play. The code below will create a 75/25 split between training and test data.
+
+```{r}
+set.seed(1234)
+trainIndex <- createDataPartition(rawDF$type, p = .75, 
+                                  list = FALSE, 
+                                  times = 1)
+head(trainIndex)
+```
+
+After this, split indices must be applied to the DF, corpus and DTM respectively:
+
+```{r}
+trainDF <- rawDF[trainIndex, ]
+testDF <- rawDF[-trainIndex, ]
+trainCorpus <- cleanCorpus[trainIndex]
+testCorpus <- cleanCorpus[-trainIndex]
+trainDTM <- cleanDTM[trainIndex, ]
+testDTM <- cleanDTM[-trainIndex, ]
+```
+
+Due to having too high variety of words in our DTM, I must eliminate those that are not frequently used.
+
+```{r}
+freqWords <- trainDTM %>% findFreqTerms(5)
+trainDTM <-  DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
+testDTM <-  DocumentTermMatrix(testCorpus, list(dictionary = freqWords))
+```
+
+Next, I will use the code from class, to build a function that transform the word counts into a factor.
+
+```{r}
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("No", "Yes"))
+}
+```
+
+Then, when the function is done I apply it to each column of the DTM.
+
+```{r}
+nColsDTM <- dim(trainDTM)[2]
+trainDTM <- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM <- apply(testDTM, MARGIN = 2, convert_counts)
+head(trainDTM[,1:10])
+```
+
+This results in the following table:
+
+      Terms
+    Docs asked based busy  can   cares check clue  college comment community
+       1 "Yes" "Yes" "Yes" "Yes" "Yes" "Yes" "Yes" "Yes"   "Yes"   "Yes"    
+       2 "No"  "No"  "No"  "Yes" "No"  "No"  "No"  "No"    "No"    "No"     
+       3 "No"  "No"  "No"  "No"  "No"  "No"  "No"  "No"    "No"    "No"     
+       4 "No"  "Yes" "No"  "Yes" "No"  "No"  "No"  "No"    "No"    "No"     
+       5 "No"  "Yes" "No"  "Yes" "No"  "No"  "No"  "No"    "No"    "Yes"    
+       6 "No"  "Yes" "No"  "No"  "No"  "No"  "No"  "No"    "No"    "No"  
+
+Lastly, the naivebayes function from the e1071 package is applied.
+
+```{r}
+nbayesModel <-  naiveBayes(trainDTM, trainDF$text, laplace = 1)
+```
+
+Modifying the original code from class, having the part of the command called "trainDF\$type" changed to "trainDF\$text" in order to match column name.
+
+```{r}
+predVec <- predict(nbayesModel, testDTM)
+confusionMatrix(predVec, testDF$text, positive = "1", dnn = c("Prediction", "True"))
+```
+
+After giving this command, R seems to be working on it, but does have an error:
+
+    Error in table(y, var) : all arguments must have the same length
+
+Unfortunately, I could not fix this issue since R has a problem loading the last two lines of command. The problem is likely to stem from overlooking the unique characteristics of this dataset, compared to the sms spam dataset that I used as a base for this.
+
+Also, aquiring further understanding on the naiveBayes() and predict() would possibly aid this error.
+
+References
+
+Qian, J., Bethke, A., Liu, Y., Belding, E., & Wang, W. Y. (2019, September 10.) A Benchmark Dataset for Learning to Intervene in Online Hate Speech. Retrieved on March 6th, 2023 from https://github.com/HAN-M3DM-Data- Mining/assignments/blob/master/datasets/NB-reddit-hate-speech.pdf
