@@ -1,0 +1,245 @@
+---
+title: "Assigment - Naive Bayes DIY"
+author:
+  - Anita Munar Author
+  - Linh Vo Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+
+# Business Understanding
+
+In this assignment, my task is to build a model that can identify fake news, based on manually categorized sentiment data. I will make use of the Naive Bayes function.
+
+```{r}
+library(class)
+library(ggplot2)
+library(caret)
+library(lattice)
+library(tidyverse)
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
+library(tm)
+library(slam)
+library(e1071)
+library(ISLR)
+library(magrittr)
+library(naivebayes)
+library(wordcloud)
+```
+
+Above are the packages I loaded in, based on the requirements of the code assignment, involving the inspection of a wordcloud additionally.
+
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-reddit-hate-speech.csv
+rawDF <- read_csv(url)
+```
+
+I start importing the dataset, for which I used the raw version of the csv file from the github environment. Sadly, I do not yet know how to connect my repository to R.
+
+# Data Understanding
+
+```{r}
+head(rawDF)
+str(rawDF)
+```
+
+After checking the data, I see a lot of raw text data, id numbers, and most importantly data called "label", with values of either 0 or 1.
+
+```{r}
+rawDF$label <- rawDF$label %>% factor %>% relevel("1")
+class(rawDF$label)
+
+rawDF$label <- rawDF$label %>% factor %>% relevel("0")
+class(rawDF$label) 
+```
+
+
+After releveling 0 and 1 labels as factors with the command above and getting the correct response, we can proceed.
+
+```{r}
+fake <- rawDF %>% filter(label == "1")
+real <- rawDF %>% filter(label == "0")
+```
+
+I assigned the variables "fake" for fake news, and "real" for actual news, with the filer function connecting it to labels 0 and 1.
+
+```{r}
+worldcloud(fake$text, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
+worldcloud(real$text, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
+
+```
+
+Now to look at the data using a wordcloud, the above code is used. It gives the error message as seen in class, being:
+
+    Warning messages:
+    1: In tm_map.SimpleCorpus(corpus, tm::removePunctuation) :
+      transformation drops documents
+    2: In tm_map.SimpleCorpus(corpus, function(x) tm::removeWords(x, tm::stopwords())) :
+      transformation drops documents
+
+# Data Preparation
+
+With the corpus() function, we create a collection for the text data.
+
+```{r}
+rawCorpus <- Corpus(VectorSource(rawDF$text))
+inspect(rawCorpus[1:3])
+```
+
+After the computer takes its time to create the raw corpus, we see that the data must be cleaned. For this, we make a new variable that applies the tm_map() functions to remove any numbers, punctuation, stopwords and white spaces.
+
+```{r}
+cleanCorpus <- rawCorpus %>% tm_map(tolower) %>% tm_map(removeNumbers)
+
+cleanCorpus <- cleanCorpus %>% tm_map(tolower) %>% tm_map(removeWords, stopwords()) %>% tm_map(removePunctuation)
+
+cleanCorpus <- cleanCorpus %>% tm_map(stripWhitespace)
+```
+
+The error comes up as seen in class:
+
+    transformation drops documents
+
+```{r}
+tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])
+```
+
+Using a tibble, I can check how well I cleaned the raw corpus data.
+
+Next, I create a new DTM (Document Term Matrix) from the cleanCorpus data, which will detect all words and arrange them into their own columns per each word. In large text datasets like the one we are working with this part takes time for the computer to load.
+
+```{r}
+cleanDM <- cleanCorpus %>% DocumentTermMatrix
+inspect(cleanDTM)
+```
+
+We can now inspect the matrix.
+
+    <<DocumentTermMatrix (documents: 20800, terms: 251789)>>
+    Non-/sparse entries: 5799371/5231411829
+    Sparsity           : 100%
+    Maximal term length: 242
+    Weighting          : term frequency (tf)
+    Sample             :
+           Terms
+    Docs      —  ’s   “  ” new one people said trump will
+      10205 185 202  11 27  27  45     88   65   129   41
+      13534   9  82  16  8  15  61    149   16     0  123
+      13746 114  31  73 93  27  72     34   24     0   14
+      14294   3  30  19  2  15  39     58    4     0   55
+      19765   0   0   0  0   0   0      0    0     0    0
+      2735    4  62  40 20  17  74     53   17    63  154
+      465     2   7 122 31   7  20     14    5     0   16
+      5093    3  82  13  3  19  59    105   10     1   61
+      7531    1  52  14  4  24  62    126   11     1  143
+      8720    5  76  24 10  20  45     83   22     0  143
+
+Now, the testing and training part of the code. First, a random number generator is used.
+
+```{r}
+set.seed(1234)
+```
+
+Then the data data must be split into test and training data, 25% and 75% randomly, using the createDataPartition() function.
+
+```{r}
+trainIndex <- createDataPartition(rawDF$label, p = .75, 
++                                   list = FALSE, 
++                                   times = 1)
+```
+
+```{r}
+head(trainIndex)
+```
+
+Now, both indices are split to test and training data, we can apply them to the dataset, the corpus, and the DTM.
+
+```{r}
+trainDF <- rawDF[trainIndex, ]
+testDF <- rawDF[-trainIndex, ]
+trainCorpus <- cleanCorpus[trainIndex]
+testCorpus <- cleanCorpus[-trainIndex]
+trainDTM <- cleanDTM[trainIndex, ]
+testDTM <- cleanDTM[trainIndex, ]
+```
+
+Now we must make sure that we only take frquent words into account, in order to avoid the numerous outlier words that are in our data, since our model will be based on words that frequently in the news environment. The first 1000 most frequent words will be counted.
+
+```{r}
+freqWords <- trainDTM %>% findFreqTerms(100000)
+trainDTM <-  DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
+testDTM <-  DocumentTermMatrix(testCorpus, list(dictionary = freqWords))
+```
+
+Next, I build the function using function(x), and apply() it to both the test and training data. This can transform the count into a factor that indicates weather the news are fake or real. The outcome will be a matrix the uses either "yes" or "no" (earlier 0, 1) classification for each word, based on weather it is present in a text or not.
+
+```{r}
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("No", "Yes"))
+}
+```
+
+After the function is built, use dim(trainDTM) \[2\] command, representing the 2 columns in DTM: train and test. Assign this to the variable nColsDTM, representing number of columns indication. Then the apply() the earlier created function on both columns.
+
+```{r}
+nColsDTM <- dim(trainDTM)[2]
+trainDTM <- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM <- apply(testDTM, MARGIN = 2, convert_counts)
+head(trainDTM[,1:10])
+```
+
+# Modelling 
+
+After seeing our cleaned trainDTM file, we can apply the nbayes model to use given featres and labels to come up with a model that can identify fake news. Then, we generate the predVec vector for predict(nbayes, testDTM)
+
+```{r}
+nbayesModel <- naiveBayes(trainDTM, trainDF$label, laplace = 1)
+
+predVec <- predict(nbayesModel, testDTM)
+```
+
+```{r}
+confusionMatrix(predVec, testDF$label, positive = "Yes", dnn = c("No", "yes"))
+```
+
+The outcome of my NB model is the following:
+
+    Confusion Matrix and Statistics
+
+       yes
+    No     0    1
+      0 1719  530
+      1  877 2073
+                                              
+                   Accuracy : 0.7294          
+                     95% CI : (0.7171, 0.7414)
+        No Information Rate : 0.5007          
+        P-Value [Acc > NIR] : < 2.2e-16       
+                                              
+                      Kappa : 0.4586          
+                                              
+     Mcnemar's Test P-Value : < 2.2e-16       
+                                              
+                Sensitivity : 0.7964          
+                Specificity : 0.6622          
+             Pos Pred Value : 0.7027          
+             Neg Pred Value : 0.7643          
+                 Prevalence : 0.5007          
+             Detection Rate : 0.3987          
+       Detection Prevalence : 0.5674          
+          Balanced Accuracy : 0.7293          
+                                              
+           'Positive' Class : 1     
+
+# Evaluation
+
+The accuracy of the model is 0.73. This is not a high number, but depending on the real-life occurance of fake news and the application of the model. It would be important to keep in mind when we apply it, that there is a 30% chance that the model would label real news as fake, and vice versa. Although, if fake news rarely occur, it is likely that my model would be economically feasible to use, for the possible identification of fake news.
+
+
+
+

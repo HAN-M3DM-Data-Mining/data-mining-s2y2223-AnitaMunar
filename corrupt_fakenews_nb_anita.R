@@ -40,7 +40,7 @@ cleanCorpus <- cleanCorpus %>% tm_map(stripWhitespace)
 
 tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])
 
-cleanDTM <- cleanCorpus %>% DocumentTermMatrix
+cleanDM <- cleanCorpus %>% DocumentTermMatrix
 inspect(cleanDTM)
 
 set.seed(1234)
