@@ -57,7 +57,7 @@ class(rawDF$label)
 rawDF$label <- rawDF$label %>% factor %>% relevel("0")
 class(rawDF$label) 
 ```
-
+hjlgjgh
 
 After releveling 0 and 1 labels as factors with the command above and getting the correct response, we can proceed.
 
