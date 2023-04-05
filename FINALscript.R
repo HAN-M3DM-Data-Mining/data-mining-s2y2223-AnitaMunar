@@ -71,7 +71,7 @@ ggplot(webshop_data, aes(x = Find_website_dummy, y = Purchase_Amount)) +
   geom_smooth(method = "loess", se = FALSE) +
   labs(x = "Find Website Dummy", y = "Purchase Amount")
 
-ggplot(webshop_data, aes(x = Find_website_dummy, y = Purchase_Amount)) +
+ggplot(webshop_data, aes(x = Device_dummy, y = Purchase_Amount)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE)
 
