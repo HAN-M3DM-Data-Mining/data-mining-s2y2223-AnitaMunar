@@ -92,8 +92,8 @@ summary(model_a)
 
 #2b
 scaled_data <- webshop_data
-scaled_data[, c("Time_Products_Average", "Review_rating", "Ease_of_purchase")] <- scale(scaled_data[, c("Time_Products_Average", "Review_rating", "Ease_of_purchase")])
-model_b <- lm(Purchase_Amount ~ Time_Products_Average+Review_rating+Ease_of_purchase+Find_website_dummy+Device_dummy, data = scaled_data)
+scaled_data[, c("Time_Products_Average", "Review_rating", "Ease_of_purchase", "Pictures", "Shipping_Time")] <- scale(scaled_data[, c("Time_Products_Average", "Review_rating", "Ease_of_purchase", "Pictures", "Shipping_Time")])
+model_b <- lm(Purchase_Amount ~ Time_Products_Average+Review_rating+Ease_of_purchase+Pictures+Find_website_dummy+Device_dummy, data = scaled_data)
 summary(model_b)
 
 # Compare the models
