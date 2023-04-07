@@ -123,12 +123,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
-<section id="exam---introduction-to-modelling" class="level2">
-<h2 class="anchored" data-anchor-id="exam---introduction-to-modelling">Exam - Introduction to Modelling</h2>
+<section id="exam---introduction-to-modelling" class="level1">
+<h1>Exam - Introduction to Modelling</h1>
 <p><strong><em>by Anita Munar (1652126)</em></strong></p>
 <p>In this document, I present my code for the statistical model that is capable of predicting the amount customers will spend in a given webshop, after looking at their online behavior and personal characteristics.</p>
-<section id="introduction" class="level3">
-<h3 class="anchored" data-anchor-id="introduction">Introduction</h3>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>First, I will load the libraries that I might need. Usually I load in all the libraries that might be useful for statistical modelling, in this case I left out the ‘wordcloud’ libraries, since the data I want to predict (spending amount) is integer, or possibly float, but not string or character data. The main objective here is that I load libraries such as ‘caret’, ‘tidyverse’ and ‘dplyr’ that are useful for executing basic statistical analysis.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(class)</span>
@@ -292,8 +292,8 @@ dbl (8): Purchase_Amount, Time_Spent_on_Website, Number_of_products_browsed,...
 </ol>
 <p>Now, lets get into the step-by-step breakdown of my tasks:</p>
 </section>
-<section id="part-1---preparing-the-data" class="level3">
-<h3 class="anchored" data-anchor-id="part-1---preparing-the-data">Part 1 - Preparing the data</h3>
+<section id="part-1---preparing-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="part-1---preparing-the-data">Part 1 - Preparing the data</h2>
 <p><strong>a.</strong> Remove rows with missing values</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>webshop_data <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(webshop_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -335,7 +335,8 @@ dbl (8): Purchase_Amount, Time_Spent_on_Website, Number_of_products_browsed,...
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>webshop_data <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(webshop_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This decreased the number of observations to <strong>1477</strong> from 1521, which is a realistic drop.</p>
-<p><strong>Dummies</strong></p>
+<section id="dummies" class="level3">
+<h3 class="anchored" data-anchor-id="dummies"><strong>Dummies</strong></h3>
 <p>We make dummy variables to represent categorical variables in a way that can be used in regression analysis. In a regression model, categorical variables cannot be included in their raw form, as they are not numerical. Instead, we create dummy variables that represent each category as a binary (0 or 1) variable. This allows us to include categorical variables in a regression model and examine their effect on the outcome variable.</p>
 <p>Following, the Device dummy and Find_website dummy is added, and the original columns are removed.</p>
 <div class="cell">
@@ -668,8 +669,10 @@ Multiple R-squared:  0.0001335
 
 p-value: 0.6572</code></pre>
 <p>We can also determine that the different routes from which the customers found the website did not have a statistically significant effect on the Purchase Amount.</p>
-<p><strong>Takeaways from simple regression</strong><br>
-To sum up the results of simple regressions, we see that the most significant variables are</p>
+</section>
+<section id="takeaways-from-simple-regression" class="level3">
+<h3 class="anchored" data-anchor-id="takeaways-from-simple-regression"><strong>Takeaways from simple regression</strong></h3>
+<p>To sum up the results of simple regressions, we see that the most significant variables are</p>
 <p>-Time_Products_Average<br>
 -Review_rating<br>
 -possibly Device_dummy</p>
@@ -728,8 +731,10 @@ An R-squared value of 0.6 indicates that 60% of the variation in the dependent v
 “Other” = 4))<br>
 Meaning, that the change between ways of reaching the website could have an effect on the purchase. If the rank increased by 1, there is a chance that the person spends 3 euro less. Therefore, customers approaching the website from social media and search engine generate slightly higher revenue than those who find it through friend and family or other methods.</p>
 <p>These outcomes put the individual simple regressions into a different light.</p>
-<p><strong>Takeaways from multiple regression</strong><br>
--Review_rating<br>
+</section>
+<section id="takeaways-from-multiple-regression" class="level3">
+<h3 class="anchored" data-anchor-id="takeaways-from-multiple-regression"><strong>Takeaways from multiple regression</strong></h3>
+<p>-Review_rating<br>
 -Time_Products_Average<br>
 -Ease_of_purchase<br>
 -Device<br>
@@ -972,11 +977,11 @@ To evaluate whether this prediction is correct, we would need to compare it to t
 
 No pre-processing
 Resampling: Cross-Validated (10 fold) 
-Summary of sample sizes: 1329, 1329, 1329, 1329, 1330, 1329, ... 
+Summary of sample sizes: 1329, 1329, 1330, 1329, 1329, 1329, ... 
 Resampling results:
 
-  RMSE      Rsquared  MAE     
-  61.88606  0.601645  46.03798
+  RMSE      Rsquared   MAE     
+  61.89755  0.6030407  46.10964
 
 Tuning parameter 'intercept' was held constant at a value of TRUE</code></pre>
 </div>
@@ -2048,20 +2053,27 @@ Multiple R-squared:  0.5575,    Adjusted R-squared:  0.5563
 F-statistic:   466 on 5 and 1849 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
-<p><strong>Model C:</strong></p>
+</section>
+<section id="model-c" class="level3">
+<h3 class="anchored" data-anchor-id="model-c"><strong>Model C:</strong></h3>
 <pre><code>Multiple R-squared:  0.6019,    Adjusted R-squared:  0.6011</code></pre>
 <p>All predictor variables have statistically significant coefficients, as indicated by the p-values less than 0.05. The R-squared value of 0.6019 indicates that the model explains approximately 60.2% of the variance in the response variable, Purchase_Amount.</p>
-<p><strong>Model D:</strong></p>
+</section>
+<section id="model-d" class="level3">
+<h3 class="anchored" data-anchor-id="model-d"><strong>Model D:</strong></h3>
 <pre><code>Multiple R-squared:  0.5579,    Adjusted R-squared:  0.5563 </code></pre>
 <p>Again, all predictor variables have statistically significant coefficients except for Pictures and Shipping_Time, as indicated by their p-values greater than 0.05.<br>
 <br>
 The R-squared value of 0.5579 indicates that this model explains approximately 55.8% of the variance in the response variable. This is less than in model_c.</p>
-<p><strong>Model E:</strong></p>
+</section>
+<section id="model-e" class="level3">
+<h3 class="anchored" data-anchor-id="model-e"><strong>Model E:</strong></h3>
 <pre><code>Multiple R-squared:  0.5575,    Adjusted R-squared:  0.5563</code></pre>
 <p>For the third model (model_e), a subset of the predictor variables from model_d is used: Time_Products_Average, Review_rating, Ease_of_purchase, Find_website_dummy_2, and Device. All predictor variables have statistically significant coefficients except for Find_website_dummy_2, as indicated by its p-value greater than 0.05. The R-squared value of 0.5575 indicates that this model explains approximately 55.8% of the variance in the response variable.</p>
 </section>
-<section id="reflection" class="level3">
-<h3 class="anchored" data-anchor-id="reflection">Reflection</h3>
+</section>
+<section id="reflection" class="level2">
+<h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
 <p>There are several ways to impute missing data, including:</p>
 <ol type="1">
 <li><p>Mean or median imputation: Replace missing values with the mean or median of the observed data for that variable.</p></li>
@@ -2074,12 +2086,12 @@ The R-squared value of 0.5579 indicates that this model explains approximately 5
 <p>Each method has strengths and weaknesses, and it is important to carefully evaluate the limitations of each method before choosing.</p>
 <p>Personally, I used multiple imputations. It uses the MICE (Multivariate Imputation by Chained Equations) package in R to impute missing values by modeling each variable with missing data as a function of the other variables in the dataset. In this code, a copy of the original dataset with missing data is created, then MICE is used to perform imputation on this copy using the “norm.predict” method, which uses regression to impute missing values. The “m=5” argument specifies that five imputed datasets should be created, and the “seed=123” argument sets a seed for reproducibility. Finally, the “complete” function is used to extract the imputed data from the MICE object.</p>
 </section>
-<section id="conclusion" class="level3">
-<h3 class="anchored" data-anchor-id="conclusion">Conclusion</h3>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
 <p>To conclude the last part, after imputing the missing values, the model did not become better unfortunately. This shows that it is quite hard to choose a stable method.</p>
 <p>Overall, the webshop managers should look more closely at the Time_Products_Average, Review_rating and Ease_of_purchase variables, since the model using only those attributes produced the most accurate outcome.</p>
 <p>It is advised for the managers to make sure that the webshop is appealing, inviting and does motivate the customer to send more time on it. Also, it is advised to look into high ratings on review of product and in ease of purchase, since the people with higher scores on those dimensions ended up spending higher amounts on the website.</p>
-<p>Finding out why these things happen can help the company generate more revenue, and eventually profit.</p>
+<p>Finding out why these things happen can help the company generate more revenue, and eventually more profit.</p>
 </section>
 </section>
 
