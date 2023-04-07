@@ -190,14 +190,11 @@ Of 137 negative diabetes, 86.9% are correctly predicted. This is a good result.
 
 #REVIEW:
 #after I run the code, in my confusion matrix out of the 137 negative diabetes, 92% is actually predicted to be negative correctly.
-#therefore I am not sure why the author (Linh) has the number 86.9%
 
 However, of 93 positive cases, only 50.5% are correctly identified. Half of the cases go wrong. This is a bad outcome.
-##REVIEW
-#for me, this number is 45.2%, even less accuracy.
+
 **Precision** in this model is 72.3%. Precision tells us that when it predicts someone is positive, 72.3% of the time is correct.
-##REVIEW
-#"Accuracy" is the correct name, not precision.
+
 **Recall** in this model is 50.5%. Recall is quite high and Precision is quite low. This can be improved by increasing the classification threshold.
 
 ## References
