@@ -1,0 +1,651 @@
+---
+title: "FMSR exam"
+format: html
+editor: visual
+author: Anita Munar (1652126)
+---
+
+## Introduction
+
+This analysis aims to investigate alienation among teens during the COVID-19 pandemic by exploring differences in the dataset using R studio. The basis of this research is the data of a sample survey collected from 500 respondents who rated their alienation on a 10-point Liekert scale (1=not alienated, 10=extremely alienated). In this paper, I analyze the answers of 100 representative respondents.
+
+This alienation is analyzed on different dimensions using maths and statistics theories. These dimensions are mainly gender and income. Later, seeking psychological consult is further evaluated.
+
+```{r}
+library(dplyr) # for data manipulation
+library(ggplot2) # for data visualization
+library(class)
+library(ggplot2)
+library(caret)
+library(lattice)
+library(tidyverse)
+library(tm)
+library(slam)
+library(e1071)
+library(ISLR)
+library(magrittr)
+library(dplyr)
+library(fastDummies)
+library(readr)
+library(psych)
+library(effsize)
+library(reshape2)
+library(grid)
+library(gridExtra)
+library(VennDiagram)
+library(venn)
+```
+
+```{r}
+rawDF <- read.csv("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2223-AnitaMunar/master/1652126alienation_data%20(1).csv", header = TRUE)
+```
+
+```{r}
+alien_data <- rawDF
+```
+
+```{r}
+mean_alienation <- mean(alien_data$alienation)
+```
+
+The mean of alienation is 5.28. This is the datapoint located in the center of the alienation dataset. Checking for the mean is a good way to xy.
+
+```{r}
+median_alienation <- median(alien_data$alienation)
+```
+
+```{r}
+score_range <- max(alien_data$alienation) - min(alien_data$alienation)
+```
+
+```{r}
+ggplot(alien_data, aes(y = alienation)) +
+  geom_boxplot() +
+  geom_hline(yintercept = mean_alienation, color = "red", linetype = "dashed") +
+  geom_hline(yintercept = median_alienation, color = "blue", linetype = "dashed") +
+  labs(title = "Distribution of Alienation Scores",
+       y = "Alienation Score",
+       x = "") +
+  theme_classic()
+```
+
+```{r}
+summary(alien_data$alienation)
+
+```
+
+The mean and the median are visible in the boxplot and summary above. The range is from 1-10 with minimum values at 1 and max values at 10, as expected in this dataset.
+
+```{r}
+std_dev <- sd(alien_data$alienation)
+```
+
+The standard of deviation of the alienation scores is 2.814, which indicates a good range of variation in the data.
+
+In order to further visualize this, a histogram is prepared.
+
+```{r}
+ggplot(alien_data, aes(x=as.numeric(factor(alienation)))) +
+  geom_histogram(color = "black", fill = "white", boundary = 0.5, bins = 10) +
+  scale_x_continuous(breaks = seq(1, 10, 1)) +
+  xlab("Alienation Scores") +
+  ylab("Respondents") +
+  ggtitle("Histogram of Alienation")
+
+
+```
+
+```{r}
+# Conduct one-sample t-test
+t_test <- t.test(alien_data$alienation, mu = mean(alien_data$alienation))
+
+# Print results
+cat("p-value =", round(t_test$p.value, 3), "\n")
+cat("95% Confidence Interval:", t_test$conf.int[1], "-", t_test$conf.int[2], "\n")
+
+```
+
+The 95% confidence interval tells me that there is 95% confidence in that the true population mean alienation score falls between 4.72 and 5.84, based on the sample data.
+
+## Alienation per gender
+
+```{r}
+alien_data$male <- as.integer(alien_data$male)
+
+```
+
+Mean
+
+```{r}
+mean_male_alienation <- alien_data %>% filter(male==1) %>% summarise(mean(alienation)) %>% pull()
+```
+
+The mean of alienation as reported by males is 5.46, which is slightly higher than the mean for the both genders combined. This means that on average, males feel 0.18 points more alienated than the population does collectively.
+
+```{r}
+mean_female_alienation <- alien_data %>% filter(male==0) %>% summarise(mean(alienation)) %>% pull()
+
+```
+
+The mean of alienation reported by females is 5.02. This means that females reported lower rates, therefore they feel less alienated by their male peers.
+
+Median
+
+```{r}
+median_male_alienation <- alien_data %>% filter(male==1) %>% summarise(median(alienation)) %>% pull()
+
+```
+
+The median male alienation is 6. This is quite concerning, because it might mean that more than half of all males feel more alienated than not or neautral.
+
+```{r}
+median_female_alienation <- alien_data %>% filter(male==0) %>% summarise(median(alienation)) %>% pull()
+```
+
+The median female alienation is 5. Meaning that young women feel mostly neutral about being alienated or not.
+
+```{r}
+range_score_male <- max(alien_data %>% filter(male==1) %>% pull(alienation)) - min(alien_data %>% filter(male==1) %>% pull(alienation))
+cat("Range of 'score' column on male respondents: ", range_score_male, "\n")
+```
+
+The range of scores is 9, matching the combined sample.
+
+```{r}
+range_score_female <- max(alien_data %>% filter(male==0) %>% pull(alienation)) - min(alien_data %>% filter(male==0) %>% pull(alienation))
+cat("Range of 'score' column on female respondents: ", range_score_female, "\n")
+```
+
+The range of scores on female respondents is 9 as well.
+
+St dev
+
+```{r}
+std_male_alienation <- sd(alien_data %>% filter(male==1) %>% pull(alienation))
+
+```
+
+The standard deviation of male alienation was 2.486, which is slightly less than for the sample population.
+
+```{r}
+std_female_alienation <- sd(alien_data %>% filter(male==0) %>% pull(alienation))
+
+```
+
+The standard deviation of female alienation was 3.227, which is visibly more than for the sample population.
+
+**Male Histogram**
+
+```{r}
+table(alien_data$alienation[alien_data$male == 1])
+```
+
+```{r}
+ggplot(data = alien_data %>% filter(male == 1), aes(x = alienation)) +
+  geom_histogram(color = "blue", fill = "white", boundary = 0.5, bins = 10) +
+  scale_x_continuous(breaks = seq(1, 10, 1)) +
+  scale_y_continuous(breaks = seq(0, 25, 1), minor_breaks = NULL) +
+  labs(x = "Alienation Scores", y = "Respondents", 
+       title = "Histogram of Alienation for Male Respondents")
+
+
+```
+
+The distribution of the scores reported by young men,
+
+Female Histogram
+
+```{r}
+table(alien_data$alienation[alien_data$male == 0])
+
+```
+
+```{r}
+ggplot(data = alien_data %>% filter(male == 0), aes(x = alienation)) +
+  geom_histogram(color = "red", fill = "white", boundary = 0.5, bins = 10) +
+  scale_x_continuous(breaks = seq(1, 10, 1)) +
+  scale_y_continuous(breaks = seq(0, 25, 1), minor_breaks = NULL) +
+  labs(x = "Alienation Scores", y = "Respondents", 
+       title = "Histogram of Alienation for Female Respondents")
+
+```
+
+Summary of gender
+
+```{r}
+# Perform ANOVA
+anova2 <- aov(alienation ~ male, data = alien_data)
+
+# Print ANOVA table
+summary(anova2)
+```
+
+The ANOVA test result for gender shows that there is no significant difference between males and females in terms of their alienation scores, since the p-value is greater than 0.05. There is no significant indicators at play which would change alienation score outcomes based on gender, but it does not mean that there is no difference at all between genders, as we seen above in the histograms
+
+## Income
+
+```{r}
+#the mean
+mean_income <- mean(alien_data$income)
+summary(mean_income)
+```
+
+I see that the column has some issues which make the R studio unable to produce the mean.
+
+```{r}
+alien_data$income <- round(alien_data$income)
+alien_data$income <- as.numeric(alien_data$income)
+
+```
+
+In order to fix it, first I convert the float values to integers, and make sure that R knows that this is numeric data.
+
+```{r}
+
+income <- na.omit(alien_data$income)
+```
+
+```{r}
+mean(income)
+```
+
+The mean income is 63633 dollars.
+
+```{r}
+#the median
+median_income <- median(income)
+```
+
+69000
+
+```{r}
+#range
+range_income <- range(income)
+summary(range_income)
+```
+
+The lowest income was 0 dollars (which could be an error/maybe the person is unemployed) and the highest income recorded in this sample is 140819 dollar.
+
+```{r}
+#the standard deviation
+sd_income <- sd(income)
+summary(sd_income)
+```
+
+The standard deviation of income is 34384 dollar. In general, a high standard deviation suggests that the values in the sample are more spread out from the mean, while a low standard deviation suggests that the values are more clustered around the mean.
+
+In the case of income, it is not uncommon for there to be a large standard deviation, as there can be significant differences in income among individuals, even within a relatively small sample.
+
+**Histogram - Income**
+
+In order to make a meaningful histogram for income, I will split the income column into 5 segments.
+
+```{r}
+#remove NA
+alien_data <- na.omit(alien_data)
+# Split income into 5 segments with equal width
+income_groups <- cut(alien_data$income, breaks = 5, labels = FALSE)
+
+# Add income groups as a new column to the data frame
+alien_data$income_group <- income_groups
+
+```
+
+This code creates a new column called income_groups in the data frame that contains a number indicating which income group each row belongs to (1 for the lowest income group, 5 for the next highest).
+
+```{r}
+# Plot histograms of alienation scores for each income group
+ggplot(data = alien_data, aes(x = alienation)) +
+  geom_histogram(binwidth = 1, color = "black", fill = "white") +
+  facet_wrap(~ income_group) +
+  scale_x_continuous(breaks = seq(1, 10, 1)) +
+  scale_y_continuous(breaks = seq(0, 25, 1), minor_breaks = NULL) +
+  labs(x = "Alienation Scores", y = "Respondents", 
+       title = "Histogram of Alienation by Income Group")
+
+
+```
+
+From this layout, we can clearly see how different the alienation score distributions are, when we look at it from classes of income.
+
+```{r}
+# Perform ANOVA
+anova <- aov(alienation ~ income_group, data = alien_data)
+
+# Print ANOVA table
+summary(anova)
+```
+
+In this case, the p-value is less than 0.05 (shown as "\<2e-16"), which means that we can reject the null hypothesis that there is no difference between the income groups, and conclude that there is a significant difference in mean alienation scores between at least two income groups.
+
+**Validity check- regression**
+
+```{r}
+model_income <- lm(alienation ~ income, data = alien_data)
+summary(model_income)
+```
+
+After running this diagnostic, the hypothesis is confirmed: income has a statistically significant effect on alienation scores.
+
+Next, I check gender
+
+```{r}
+model_gender <- lm(alienation ~ male, data = alien_data)
+summary(model_gender)
+```
+
+From the diagnostics of the linear regression, we see that gender does not have a strong statistical effect on the alienation score outcomes.
+
+**Validity check - gender**
+
+```{r}
+# Create a data frame with counts of males and females
+gender_count <- data.frame(
+  Gender = c("Male", "Female"),
+  Count = c(sum(alien_data$male == 1), sum(alien_data$male == 0))
+)
+
+# Create the bar plot
+ggplot(gender_count, aes(x = Gender, y = Count, fill = Gender)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("pink", "blue")) +
+  labs(title = "Gender Distribution", x = "Gender", y = "Count") +
+  theme_minimal()
+```
+
+To further look into this, I check whether the income is distributed in an uneven way across genders:
+
+```{r}
+income_by_gender <- table(alien_data$income_group, alien_data$male)
+income_by_gender
+
+```
+
+In this distribution, I see that there are slightly more women in the "lowest" earning category. Next up, I see that there are far more men in the "low" earning category (4 female vs. 17 male). This means that in my data there are more low and quite a lot of lowest earning men. This may have influenced the differences between gender, causing the false assumption that men feel more alienated ebcaue of their gender. This matrix might be pointin the reader in a different direction, where the low scores of men are due to a lower income. When we reach medium incomes, the disribution seems evened out. In the high earners, there are slightly more women, and when we reach the highest earning segment, males are more present than females - within my sample.
+
+I want to visualize the distribution of income between genders in my sample better:
+
+```{r}
+# Create a data frame with income and gender variables
+income_by_gender_df <- alien_data %>%
+  filter(!is.na(income)) %>%
+  group_by(male, income_group) %>%
+  summarise(Freq = n()) %>%
+  ungroup()
+
+# Convert the income group variable to a factor with labels
+income_by_gender_df$income_group <- factor(income_by_gender_df$income_group, labels = c("Lowest", "Low", "Medium", "High", "Highest"))
+
+# Plot the income distribution by gender
+ggplot(income_by_gender_df, aes(fill = income_group, y = Freq, x = factor(male, levels = c(0, 1), labels = c("Female", "Male")))) +
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_brewer(palette = "Spectral") +
+  labs(x = "Gender", y = "Frequency", title = "Income Distribution by Gender") +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size = 12),
+        legend.position = "right") +
+  guides(fill = guide_legend(reverse = TRUE))
+
+```
+
+## **Missing data**
+
+There was 1 row in which a missing datapoint was found. In order to execute meaningful analysis on the income variable, I have deleted rows with the value NA earlier.
+
+## **Consult**
+
+```{r}
+# Create a frequency table for the consult column
+consult_freq <- table(alien_data$consult)
+
+# Print the frequency table
+consult_freq
+```
+
+```{r}
+# Plot the frequency table as a bar chart
+barplot(consult_freq, main = "Consultation Help", xlab = "Consultation (0 = No, 1 = Yes)", ylab = "Frequency")
+print(barplot)
+```
+
+In my sample of 100 - later 99 people, there are 3 people who sought for psychological help, and 96 who did not. I went back to check rawDF, and even with the missing income person, the number of people who sought help would be 3 regardless, as that person did not seek help either.
+
+```{r}
+# Subset the rows where consult is 1
+consult_yes <- subset(alien_data, consult == 1)
+
+# Select the male column and any other columns you want to see
+consult_yes_gender <- consult_yes[, c("male")]
+
+# Print the resulting data frame
+consult_yes_gender
+```
+
+```{r}
+# Create a summary table showing the count of males and females who sought consultation
+consult_summary <- table(consult_yes$male)
+print(consult_summary)
+
+```
+
+Based on this, I see that 2 females (coded as "0" from the male column) and 1 male (coded as "1") have sought after psychological help.
+
+```{r}
+# Create a bar chart to show the count of males and females who sought consultation
+ggplot(consult_yes, aes(x = factor(male, levels = c(0, 1)), fill = factor(male, levels = c(0, 1)))) +
+  geom_bar() +
+  scale_fill_manual(values = c("#F8766D", "#00BFC4"), labels = c("Female", "Male")) +
+  labs(title = "Consultation by Gender", x = "Gender", y = "Frequency") +
+  theme_bw()
+```
+
+### Venn diagram
+
+```{r}
+# Create the sets for each group
+set1 <- alien_data$male[alien_data$male == 1]
+set2 <- alien_data$male[alien_data$male == 0]
+set3 <- alien_data$consult[alien_data$consult == 1]
+
+# Count the number of men and women seeking consultation
+n_male_consult <- sum(alien_data$male == 1 & alien_data$consult == 1)
+n_female_consult <- sum(alien_data$male == 0 & alien_data$consult == 1)
+
+# Create the Venn diagram
+vd <- draw.triple.venn(
+  area1 = length(set1),
+  area2 = length(set2),
+  area3 = length(set3),
+  n12 = length(intersect(set1, set2)),
+  n13 = length(intersect(set1, set3)),
+  n23 = length(intersect(set2, set3)),
+  n123 = length(intersect(intersect(set1, set2), set3)),
+  category = c("Male", "Female", "Consult"),
+  fill = c("pink", "skyblue", "purple"),
+  lty = "blank",
+  cex = 1.5,
+  cat.cex = 1.5,
+  cat.col = c("black", "black", "black"),
+  margin = 0.05,
+  scaled = FALSE,
+  euler.d = FALSE,
+  alpha = 0.5,
+  main = "Venn Diagram of Set 1, Set 2, and Set 3"
+)
+
+# Display the Venn diagram
+grid.newpage()
+grid.draw(vd)
+
+# Add labels to the diagram
+grid.text(n_male_consult, x = 0.27, y = 0.55, gp = gpar(fontsize = 16))
+grid.text(n_female_consult, x = 0.73, y = 0.55, gp = gpar(fontsize = 16))
+
+grid.text(paste("Men seeking consultation:", n_male_consult, "\nWomen seeking consultation:", n_female_consult), x = 0.5, y = 0.25, gp = gpar(fontsize = 16))
+
+```
+
+## **Currency exchange**
+
+```{r}
+exchange_rate <- 0.9157
+alien_data$income_eur <- alien_data$income * exchange_rate
+```
+
+Now that I created the income_eur column, I want to make it into integers, instead of their current state being float data.
+
+```{r}
+alien_data$income_eur <- as.integer(alien_data$income_eur)
+```
+
+Now, in order to compare the means and standard deviations of the 2 different currency's income column:
+
+```{r}
+# Calculate mean and standard deviation of income_usd
+mean_usd <- mean(alien_data$income)
+sd_usd <- sd(alien_data$income)
+
+# Calculate mean and standard deviation of income_eur
+mean_eur <- mean(alien_data$income_eur)
+sd_eur <- sd(alien_data$income_eur)
+
+# Combine the results into a table
+stats <- rbind(data.frame(Measure = "Mean", USD = mean_usd, EUR = mean_eur),
+               data.frame(Measure = "Standard Deviation", USD = sd_usd, EUR = sd_eur))
+
+# Print the table
+print(stats)
+
+```
+
+```{r}
+# Create a data frame with income and income_eur
+income_df <- data.frame(income_usd = alien_data$income,
+                        income_eur = round(alien_data$income_eur))
+
+# Create a box plot with income and income_eur
+ggplot(melt(income_df), aes(x = variable, y = value)) +
+  geom_boxplot() +
+  labs(x = "", y = "Income (EUR)", title = "Comparison of USD and EUR") +
+  scale_x_discrete(labels = c("Income (USD)", "Income (EUR)")) +
+  theme_bw()
+```
+
+```{r}
+# create histogram for income in USD
+p1 <- ggplot(alien_data, aes(x = income)) +
+  geom_histogram(binwidth = 5000, color = "black", fill = "skyblue") +
+  ggtitle("Income Distribution in USD")
+
+# create histogram for income in EUR
+p2 <- ggplot(alien_data, aes(x = income_eur)) +
+  geom_histogram(binwidth = 5000, color = "black", fill = "orange") +
+  ggtitle("Income Distribution in EUR")
+
+# arrange plots side by side
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Above are the two ways to visualize the different spreads of the two types of income sets.
+
+Venn diagram
+
+## **Centered income**
+
+```{r}
+alien_data$centered_income <- alien_data$income - mean(alien_data$income)
+```
+
+After running this, it can be seem that some centered income values became negative because they are being subtracted from the sample mean, which can be greater or less than the individual's income. This is a normal result of centering data and is not a problem for modeling. In fact, centering data is often done to make modeling easier and more accurate. Negative values simply mean that an individual's income is below the sample mean, while positive values mean that an individual's income is above the sample mean.
+
+```{r}
+centered_income <- alien_data$income - mean(alien_data$income)
+mean_centered_income <- mean(centered_income)
+sd_centered_income <- sd(centered_income)
+
+cat("Mean of centered income: ", mean_centered_income, "\n")
+cat("Standard deviation of centered income: ", sd_centered_income, "\n")
+```
+
+```{r}
+# Boxplot of centered income
+ggplot(alien_data, aes(y = centered_income)) +
+  geom_boxplot() +
+  labs(title = "Centered Income Boxplot", y = "Centered Income")
+```
+
+```{r}
+# Histogram of centered income
+ggplot(alien_data, aes(x = centered_income)) +
+  geom_histogram(binwidth = 1000) +
+  labs(title = "Centered Income Histogram", x = "Centered Income", y = "Frequency")
+```
+
+By looking at the histogram above, it is visible that the sample for this study is quite unevenly distributed. There are a lot more people earning less than the centered population mean, than those earning more. By looking at this, it is possible to judge the sample mean as highly impacted by low earnings - this probably explains why there were a lot of people in the sample who rate their alienation to be very harsh.
+
+Now, lets compare it to the uncentered income!
+
+```{r}
+# Create a data frame for visualization
+df <- data.frame(
+  variable = c(rep("Income", nrow(alien_data)), rep("Centered Income", nrow(alien_data))),
+  value = c(alien_data$income, centered_income)
+)
+```
+
+```{r}
+# Create a box plot
+ggplot(df, aes(x = variable, y = value)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Centered Income", "Income")) +
+  labs(title = "Comparison of Income and Centered Income",
+       y = "Income in USD") +
+  theme_bw()
+```
+
+Compared to the mean of the income, the centered income mean is very low, almost at 0. This indicates that the majority of the values in the original income variable are above the sample mean. This observation can be explained by the fact that the sample likely included a few very wealthy individuals with high incomes, which increased the overall mean of the original income variable.
+
+By centering the income data, we are essentially removing the influence of the sample mean on the individual income values, and calculating how far each value deviates from the mean. Therefore, the centered income variable provides a better representation of the distribution of income in the sample.
+
+## **Country comparison**
+
+Formula of alienation in researcher's country: Alienation = 5.56 − 0.073 ∗ Income
+
+Formula of alienation in neighboring country, a similar formula turns out to be: Alienation = 4.80 − 0.030 ∗ Income
+
+Steps to find the income level at which the expected alienation is the same in both countries:
+
+**1.**
+
+Combine the terms into an equation:
+
+5.56 - 0.073 \* income = 4.80 - 0.030 \* income
+
+**2.**
+
+Moving all the Income terms to one side:
+
+5.56 - 4.80 = 0.073 \* income - 0.030 \* income
+
+**3.**
+
+Simplify
+
+0.76 = 0.043 \* income
+
+**4.**
+
+Dividing both sides by 0.043 **Income = 17.6744**
+
+Therefore, the income level at which the expected alienation outcomes are the same for both countries is approximately \$17,674.
+
+## Bonus question
+
+After running the lm() function on gender, and from the diagnostics of the linear regression, it is possible to determine that gender does not have a strong statistical effect on the alienation score outcomes. This chunk of code can be found in this R script before the Venn diagram.
+
+To further look into this, I checked whether the income is distributed in an uneven way across genders and I see that there are slightly more women in the "lowest" earning category (1). Next up, I see that there are far more men in the "low" earning category (4 female vs. 17 male). This means that in my data there are more low and quite a lot of lowest earning men. This may have influenced the differences between gender, causing the false assumption that men feel more alienated because of their gender. This matrix might be pointing the reader in a different direction, where the low scores of men are due to a lower income. When we reach medium incomes, the distribution seems evened out. In the high earners, there are slightly more women, and when we reach the highest earning segment, males are more present than females - within my sample.
+
+## Conclusion
+
+By identifying the factors that contribute to feelings of alienation and developing interventions to address these factors, we may be able to help individuals better cope with these feelings and prevent negative outcomes such as depression, anxiety, and social withdrawal.
+
+Further study should be conducted based on how the income divide creates a divide in alienation as well. plus further investigation on the elements of alienation and their effects should be looked after. Those findings could lead to a happier and healthier young generation.
